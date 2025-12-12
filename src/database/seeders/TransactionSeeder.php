@@ -48,16 +48,17 @@ class TransactionSeeder extends Seeder
         ]);
 
         // チャットメッセージ
-        Chat::create([
-            'sender_id' => $buyer->id,
-            'sold_item_id' => $soldItem->id,
-            'message' => '購入させていただきました。よろしくお願いいたします。',
-        ]);
-        Chat::create([
-            'sender_id' => $seller->id,
-            'sold_item_id' => $soldItem->id,
-            'message' => 'ご購入ありがとうございます。発送まで少々お待ちください。',
-        ]);
+        // チャットメッセージ（30件作成して無限スクロール検証用にする）
+        $now = now();
+        for ($i = 0; $i < 30; $i++) {
+            Chat::create([
+                'sender_id' => ($i % 2 === 0) ? $buyer->id : $seller->id,
+                'sold_item_id' => $soldItem->id,
+                'message' => 'テストメッセージ ' . ($i + 1) . 'です。無限スクロールの動作確認用です。',
+                'created_at' => $now->copy()->subMinutes(30 - $i), // 古い順に作成
+                'updated_at' => $now->copy()->subMinutes(30 - $i),
+            ]);
+        }
 
         // 2. 取引完了の商品を作成（評価あり）
         if ($items->count() > 0) {

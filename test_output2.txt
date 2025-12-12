@@ -1,0 +1,12 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Api\ChatTest[39m
+  [32;1m✓[39;22m[39m [2mindex chat[22m[39m
+  [32;1m✓[39;22m[39m [2mstore chat[22m[39m
+  [32;1m✓[39;22m[39m [2mupdate chat[22m[39m
+  [32;1m✓[39;22m[39m [2mdestroy chat[22m[39m
+  [32;1m✓[39;22m[39m [2mcannot update others chat[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m5 passed[39;22m
+  [37;1mTime:   [39;22m[39m0.66s[39m
+

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ChatRequest;
 use App\Models\Chat;
 use App\Models\Item;
 use App\Models\SoldItem;
@@ -24,12 +23,7 @@ class ChatController extends Controller
             abort(403);
         }
 
-        $chats = $soldItem->chats()->with('sender.profile')->orderBy('created_at', 'asc')->get();
-
-        $soldItem->chats()
-            ->where('sender_id', '!=', $user->id)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        // Note: Chat messages are now fetched via API in the frontend.
 
         // サイドバー用の他の取引を取得
         $otherTransactions = SoldItem::where(function ($query) use ($user) {
@@ -71,7 +65,6 @@ class ChatController extends Controller
         $transaction = [
             'item' => $item,
             'soldItem' => $soldItem,
-            'chats' => $chats,
             'otherUser' => $otherUser,
         ];
 
@@ -84,56 +77,5 @@ class ChatController extends Controller
             'transaction' => $transaction,
             'sidebar' => $sidebar,
         ]);
-    }
-
-    public function store(ChatRequest $request, Item $item)
-    {
-        $soldItem = $item->soldItem;
-        if (!$soldItem) {
-            abort(404);
-        }
-
-        // 権限チェック
-        if (Auth::id() !== $soldItem->buyer_id && Auth::id() !== $item->seller_id) {
-            abort(403);
-        }
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('chat_images', 'public');
-        }
-
-        Chat::create([
-            'sender_id' => Auth::id(),
-            'sold_item_id' => $soldItem->id,
-            'message' => $request->message,
-            'image_path' => $imagePath,
-        ]);
-
-        return redirect()->route('chat.index', $item->id);
-    }
-
-    public function destroy(Chat $chat)
-    {
-        if ($chat->sender_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $chat->delete();
-
-        return back();
-    }
-
-    public function update(ChatRequest $request, Chat $chat)
-    {
-        // 自分のメッセージしか編集できないように認可
-        if ($chat->sender_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $chat->message = $request->input('message');
-        $chat->save();
-
-        return back()->with('message', 'メッセージを更新しました！');
     }
 }

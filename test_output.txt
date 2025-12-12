@@ -1,0 +1,115 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Api\ChatTest[39m
+  [31;1m⨯[39;22m[39m [2mindex chat[22m[39m
+  [31;1m⨯[39;22m[39m [2mstore chat[22m[39m
+  [31;1m⨯[39;22m[39m [2mupdate chat[22m[39m
+  [31;1m⨯[39;22m[39m [2mdestroy chat[22m[39m
+  [31;1m⨯[39;22m[39m [2mcannot update others chat[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Api\ChatTest [39;22m> [31;1mindex chat[39;22m
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (SQL: insert into "items" ("seller_id", "condition_id", "name", "brand", "description", "price", "img_url", "updated_at", "created_at") values (1, 4, non, 株式会社 小泉, Commodi et iure facere rerum., 11043, dummy.jpg, 2025-12-11 13:57:54, 2025-12-11 13:57:54))[39;22m
+
+  at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m712[39m
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+      [2m+17 vendor frames [22m
+  [33m18  [39m[39;1mtests/Feature/Api/ChatTest.php[39;22m:[39;1m20[39;22m
+  [37m    Illuminate\Database\Eloquent\Factories\Factory::create([])[39m
+
+  [31;1m• Tests\Feature\Api\ChatTest [39;22m> [31;1mstore chat[39;22m
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (SQL: insert into "items" ("seller_id", "condition_id", "name", "brand", "description", "price", "img_url", "updated_at", "created_at") values (1, 1, sed, 有限会社 高橋, Ad sunt voluptatem quaerat perspiciatis., 2284, dummy.jpg, 2025-12-11 13:57:54, 2025-12-11 13:57:54))[39;22m
+
+  at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m712[39m
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+      [2m+17 vendor frames [22m
+  [33m18  [39m[39;1mtests/Feature/Api/ChatTest.php[39;22m:[39;1m43[39;22m
+  [37m    Illuminate\Database\Eloquent\Factories\Factory::create([])[39m
+
+  [31;1m• Tests\Feature\Api\ChatTest [39;22m> [31;1mupdate chat[39;22m
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (SQL: insert into "items" ("seller_id", "condition_id", "name", "brand", "description", "price", "img_url", "updated_at", "created_at") values (1, 1, voluptatem, 有限会社 中津川, Enim velit hic qui labore., 35758, dummy.jpg, 2025-12-11 13:57:54, 2025-12-11 13:57:54))[39;22m
+
+  at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m712[39m
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+      [2m+17 vendor frames [22m
+  [33m18  [39m[39;1mtests/Feature/Api/ChatTest.php[39;22m:[39;1m67[39;22m
+  [37m    Illuminate\Database\Eloquent\Factories\Factory::create([])[39m
+
+  [31;1m• Tests\Feature\Api\ChatTest [39;22m> [31;1mdestroy chat[39;22m
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (SQL: insert into "items" ("seller_id", "condition_id", "name", "brand", "description", "price", "img_url", "updated_at", "created_at") values (1, 1, itaque, 有限会社 工藤, Doloribus voluptatem non vel id nesciunt vel sed., 41130, dummy.jpg, 2025-12-11 13:57:54, 2025-12-11 13:57:54))[39;22m
+
+  at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m712[39m
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+      [2m+17 vendor frames [22m
+  [33m18  [39m[39;1mtests/Feature/Api/ChatTest.php[39;22m:[39;1m96[39;22m
+  [37m    Illuminate\Database\Eloquent\Factories\Factory::create([])[39m
+
+  [31;1m• Tests\Feature\Api\ChatTest [39;22m> [31;1mcannot update others chat[39;22m
+  [41;1m Illuminate\Database\QueryException [49;22m
+
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (SQL: insert into "items" ("seller_id", "condition_id", "name", "brand", "description", "price", "img_url", "updated_at", "created_at") values (1, 4, numquam, 有限会社 若松, Nulla nostrum officia quis maxime., 5263, dummy.jpg, 2025-12-11 13:57:54, 2025-12-11 13:57:54))[39;22m
+
+  at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m712[39m
+    708▕         // If an exception occurs when attempting to run a query, we'll format the error
+    709▕         // message to include the bindings with SQL, which will make this exception a
+    710▕         // lot more helpful to the developer instead of just the database's errors.
+    711▕         catch (Exception $e) {
+  ➜ 712▕             throw new QueryException(
+    713▕                 $query, $this->prepareBindings($bindings), $e
+    714▕             );
+    715▕         }
+    716▕     }
+
+      [2m+17 vendor frames [22m
+  [33m18  [39m[39;1mtests/Feature/Api/ChatTest.php[39;22m:[39;1m117[39;22m
+  [37m    Illuminate\Database\Eloquent\Factories\Factory::create([])[39m
+
+
+  [37;1mTests:  [39;22m[31;1m5 failed[39;22m
+  [37;1mTime:   [39;22m[39m0.43s[39m
+

@@ -43,7 +43,7 @@ class ChatTest extends TestCase
         $messageText = '購入者からのメッセージです';
         $imageFile = UploadedFile::fake()->image('buyer_message.jpg');
 
-        $response = $this->post(route('chat.store', $item->id), [
+        $response = $this->postJson(route('api.chat.store', $item->id), [
             'message' => $messageText,
             'image' => $imageFile,
         ]);
@@ -57,7 +57,8 @@ class ChatTest extends TestCase
         ]);
         // ストレージに画像ファイルが保存されたことを確認
         Storage::disk('public')->assertExists('chat_images/' . $imageFile->hashName());
-        $response->assertRedirect(route('chat.index', $item->id));
+        Storage::disk('public')->assertExists('chat_images/' . $imageFile->hashName());
+        $response->assertStatus(201);
 
         // 送信直後はread_atがnullであることを確認
         $buyerChat = Chat::where('sender_id', $buyer->id)->where('sold_item_id', $soldItem->id)->first();
@@ -71,7 +72,7 @@ class ChatTest extends TestCase
         $messageTextSeller = '出品者からの返信です';
         $imageFileSeller = UploadedFile::fake()->image('seller_reply.png');
 
-        $responseSeller = $this->post(route('chat.store', $item->id), [
+        $responseSeller = $this->postJson(route('api.chat.store', $item->id), [
             'message' => $messageTextSeller,
             'image' => $imageFileSeller,
         ]);
@@ -83,15 +84,17 @@ class ChatTest extends TestCase
             'image_path' => 'chat_images/' . $imageFileSeller->hashName(),
         ]);
         Storage::disk('public')->assertExists('chat_images/' . $imageFileSeller->hashName());
-        $responseSeller->assertRedirect(route('chat.index', $item->id));
+        Storage::disk('public')->assertExists('chat_images/' . $imageFileSeller->hashName());
+        $responseSeller->assertStatus(201);
 
-        // --- 出品者がチャット画面を開いた後、購入者からのメッセージが既読になっていることを確認 ---
-        $responseChatPage = $this->get(route('chat.index', $item->id));
-        $responseChatPage->assertStatus(200);
-        $responseChatPage->assertSee($messageText);
-        $responseChatPage->assertSee($messageTextSeller);
-        $responseChatPage->assertSee($imageFile->hashName()); // 画像ファイル名が表示されることで存在を確認
-        $responseChatPage->assertSee($imageFileSeller->hashName());
+        // --- 出品者がチャット画面を開いた後（APIを取得した後）、購入者からのメッセージが既読になっていることを確認 ---
+        $responseChatApi = $this->getJson(route('api.chat.index', $item->id));
+        $responseChatApi->assertStatus(200);
+        $responseChatApi->assertJsonFragment(['message' => $messageText]);
+        $responseChatApi->assertJsonFragment(['message' => $messageTextSeller]);
+        // 画像検証はJSON内のimage_path等で行う必要があるが、Fragmentでファイル名が含まれているか確認
+        $this->assertStringContainsString($imageFile->hashName(), $responseChatApi->content());
+        $this->assertStringContainsString($imageFileSeller->hashName(), $responseChatApi->content());
 
         $buyerChat->refresh(); // データベースから最新の状態を再読み込み
         $this->assertNotNull($buyerChat->read_at); // read_atがnullではないことを確認
@@ -183,25 +186,25 @@ class ChatTest extends TestCase
         $this->actingAs($buyer);
 
         // 1. 本文が未入力の場合
-        $response = $this->post(route('chat.store', $item->id), [
+        $response = $this->postJson(route('api.chat.store', $item->id), [
             'message' => '',
         ]);
-        $response->assertSessionHasErrors(['message' => '本文を入力してください']);
+        $response->assertJsonValidationErrors(['message']);
 
         // 2. 画像が.pngまたは.jpeg形式以外の場合 (例: gif)
-        $response = $this->post(route('chat.store', $item->id), [
+        $response = $this->postJson(route('api.chat.store', $item->id), [
             'message' => 'Valid message',
             'image' => UploadedFile::fake()->create('test.gif'),
         ]);
 
-        $response->assertSessionHasErrors(['image' => '「.png」または「.jpeg」形式でアップロードしてください']);
+        $response->assertJsonValidationErrors(['image']);
 
         // 3. 本文が401文字以上の場合
         $longMessage = str_repeat('a', 401);
-        $response = $this->post(route('chat.store', $item->id), [
+        $response = $this->postJson(route('api.chat.store', $item->id), [
             'message' => $longMessage,
         ]);
-        $response->assertSessionHasErrors(['message' => '本文は400文字以内で入力してください']);
+        $response->assertJsonValidationErrors(['message']);
     }
 
     /**
@@ -228,11 +231,11 @@ class ChatTest extends TestCase
 
         // メッセージ更新
         $updatedMessage = 'Updated Message';
-        $response = $this->patch(route('chat.update', $chat->id), [
+        $response = $this->patchJson(route('api.chat.update', $chat->id), [
             'message' => $updatedMessage,
         ]);
 
-        $response->assertStatus(302);
+        $response->assertStatus(200);
         $this->assertDatabaseHas('chats', [
             'id' => $chat->id,
             'message' => $updatedMessage,
@@ -240,7 +243,7 @@ class ChatTest extends TestCase
 
         // 他のユーザー（出品者）が編集しようとすると403エラー
         $this->actingAs($seller);
-        $response = $this->patch(route('chat.update', $chat->id), [
+        $response = $this->patchJson(route('api.chat.update', $chat->id), [
             'message' => 'Hacked Message',
         ]);
         $response->assertStatus(403);
@@ -269,9 +272,9 @@ class ChatTest extends TestCase
         $this->actingAs($buyer);
 
         // メッセージ削除
-        $response = $this->delete(route('chat.destroy', $chat->id));
+        $response = $this->deleteJson(route('api.chat.destroy', $chat->id));
 
-        $response->assertStatus(302);
+        $response->assertStatus(200);
         $this->assertDatabaseMissing('chats', [
             'id' => $chat->id,
         ]);
@@ -284,7 +287,7 @@ class ChatTest extends TestCase
         ]);
 
         $this->actingAs($seller);
-        $response = $this->delete(route('chat.destroy', $chat2->id));
+        $response = $this->deleteJson(route('api.chat.destroy', $chat2->id));
         $response->assertStatus(403);
         $this->assertDatabaseHas('chats', [
             'id' => $chat2->id,

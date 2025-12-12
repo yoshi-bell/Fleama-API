@@ -68,12 +68,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/like/{item}', [LikeController::class, 'destroy'])->name('like.destroy');
     Route::post('/comment/{item}', [CommentController::class, 'store'])->name('comment.store');
 
-    // Chat
+    // Chat (View)
     Route::get('/chat/{item}', [ChatController::class, 'index'])->name('chat.index');
-    Route::post('/chat/{item}', [ChatController::class, 'store'])->name('chat.store');
-    Route::delete('/chat/{chat}', [ChatController::class, 'destroy'])->name('chat.destroy');
-    Route::patch('/chat/message/{chat}', [ChatController::class, 'update'])->name('chat.update');
 
     // Rating
     Route::post('/rating/{soldItem}', [RatingController::class, 'store'])->name('rating.store');
+
+    // Chat API (Internal, Session-based)
+    // using /api/v1 prefix to match JS client, but inside web middleware stack
+    Route::prefix('api/v1')->group(function () {
+        Route::get('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'index'])->name('api.chat.index');
+        Route::post('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'store'])->name('api.chat.store');
+        Route::apiResource('chats', \App\Http\Controllers\Api\v1\ChatController::class)->only(['show', 'update', 'destroy'])->names([
+            'show' => 'api.chat.show',
+            'update' => 'api.chat.update',
+            'destroy' => 'api.chat.destroy',
+        ]);
+    });
 });

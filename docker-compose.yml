@@ -17,6 +17,7 @@ services:
             - ./src:/var/www/
         links:
             - mysql
+            - mailhog
         depends_on:
             - mysql
         networks:

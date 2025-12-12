@@ -69,12 +69,12 @@ class TransactionTest extends TestCase
         ]);
 
         $response = $this->actingAs($buyer)
-            ->post(route('chat.store', $item->id), [
+            ->postJson(route('api.chat.store', $item->id), [
                 'message' => 'Hello Seller!',
                 'image' => UploadedFile::fake()->image('test.jpg'),
             ]);
 
-        $response->assertRedirect(route('chat.index', $item->id));
+        $response->assertStatus(201);
 
         $soldItem = SoldItem::where('item_id', $item->id)->first();
         $this->assertDatabaseHas('chats', [
