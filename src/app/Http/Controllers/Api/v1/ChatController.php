@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\Item;
 use App\Http\Requests\ChatRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -85,22 +84,6 @@ class ChatController extends Controller
         return response()->json($chat, 201);
     }
 
-    /**
-     * 指定されたリソースを表示する。
-     * GET /api/v1/chats/{chat}
-     */
-    public function show(Chat $chat)
-    {
-        $user = Auth::user();
-        $soldItem = $chat->soldItem;
-
-        // 権限チェック
-        if ($user->id !== $soldItem->buyer_id && $user->id !== $soldItem->item->seller_id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        return response()->json($chat->load('sender.profile'), 200);
-    }
 
     /**
      * ストレージ内の指定されたリソースを更新する。

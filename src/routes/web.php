@@ -79,8 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('api/v1')->group(function () {
         Route::get('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'index'])->name('api.chat.index');
         Route::post('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'store'])->name('api.chat.store');
-        Route::apiResource('chats', \App\Http\Controllers\Api\v1\ChatController::class)->only(['show', 'update', 'destroy'])->names([
-            'show' => 'api.chat.show',
+        Route::apiResource('chats', \App\Http\Controllers\Api\v1\ChatController::class)->only(['update', 'destroy'])->names([
             'update' => 'api.chat.update',
             'destroy' => 'api.chat.destroy',
         ]);

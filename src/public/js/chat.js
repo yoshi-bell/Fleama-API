@@ -5,142 +5,152 @@ window.openRatingModal = function () {
 };
 
 document.addEventListener("DOMContentLoaded", function () {
+    // ==========================================
+    // 1. 変数・定数の定義 (State & DOM)
+    // ==========================================
     const chatContainer = document.getElementById("chat-container");
     if (!chatContainer) return;
 
-    const itemId = chatContainer.dataset.itemId;
-    const currentUserId = parseInt(chatContainer.dataset.userId); // ensure int
+    // DOM Elements
     const messagesContainer = document.getElementById("chat-messages");
     const chatForm = document.getElementById("chat-form");
     const chatErrors = document.getElementById("chat-errors");
+    const chatInput = document.getElementById("chat-message-input");
 
+    // IDs
+    const itemId = parseInt(chatContainer.dataset.itemId);
+    const currentUserId = parseInt(chatContainer.dataset.userId);
+    const soldItemId = parseInt(chatContainer.dataset.soldItemId);
+
+    // State
     let page = 1;
     let hasMore = true;
     let isLoading = false;
 
-    // 初期ロード
+    // ==========================================
+    // 2. 初期化処理 (Init)
+    // ==========================================
     fetchMessages(1, true);
+    restoreDraft();
+
+    // ==========================================
+    // 3. イベントリスナー定義 (Event Listeners)
+    // ==========================================
 
     // 無限スクロール
-    messagesContainer.addEventListener("scroll", () => {
+    messagesContainer.addEventListener("scroll", handleScroll);
+
+    // メッセージ送信
+    chatForm.addEventListener("submit", handleSendMessage);
+
+    // メッセージ編集・削除 (Event Delegation)
+    messagesContainer.addEventListener("click", handleMessageActions);
+
+    // 編集フォーム送信 (Event Delegation)
+    messagesContainer.addEventListener("submit", handleEditSubmit);
+
+    // ==========================================
+    // 4. 関数定義 (Functions)
+    // ==========================================
+
+    /**
+     * 無限スクロールハンドラー
+     */
+    function handleScroll() {
         if (messagesContainer.scrollTop === 0 && hasMore && !isLoading) {
             fetchMessages(page + 1, false);
         }
-    });
+    }
 
-    // メッセージ送信
-    chatForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    /**
+     * メッセージ送信ハンドラー
+     */
+    async function handleSendMessage(event) {
+        event.preventDefault();
         const formData = new FormData(chatForm);
-
-        // クライアントバリデーション削除（サーバー側のChatRequestに任せる）
-        /*
-        const message = formData.get("message");
-        const image = formData.get("image");
-        if (!message && (!image || image.size === 0)) {
-            // alert("メッセージを入力してください"); // Removed per user request
-            showError("メッセージを入力してください（本文）"); // Use inline error
-            return;
-        }
-        */
 
         try {
             await apiRequest(`/api/v1/items/${itemId}/chats`, "POST", formData);
             chatForm.reset();
-            // 送信後は最新（一番下）を表示するためにリセット
+
+            // 下書き削除
+            if (soldItemId && currentUserId) {
+                const key = getDraftKey(soldItemId, currentUserId);
+                localStorage.removeItem(key);
+            }
+
+            // 送信後はリセットして再取得
             page = 1;
             hasMore = true;
-            messagesContainer.innerHTML = ""; // クリア
+            messagesContainer.innerHTML = "";
             fetchMessages(1, true);
-
-            // localStorageクリア (FN009)
-            const soldItemId = chatContainer.dataset.soldItemId;
-            if (soldItemId && currentUserId) {
-                localStorage.removeItem(
-                    `chat_message_for_${soldItemId}_by_user_${currentUserId}`
-                );
-            }
         } catch (error) {
-            // バリデーションエラーのハンドリング
-            if (error.data && error.data.errors) {
-                // errors: { message: ["本文を入力してください"], image: ["「.png」または「.jpeg」形式..."] }
-                // 全てのエラーメッセージを結合して表示
-                const errorMessages = Object.values(error.data.errors)
-                    .flat()
-                    .map((msg) => `<p class="chat-form__error">${msg}</p>`)
-                    .join("");
-
-                chatErrors.innerHTML = errorMessages;
-                chatErrors.style.display = "block";
-                setTimeout(() => {
-                    chatErrors.style.display = "none";
-                }, 3000);
-            } else {
-                showError("送信に失敗しました");
-            }
-            console.error(error);
+            handleError(error);
         }
-    });
+    }
 
-    // メッセージ編集・削除 (Event Delegation)
-    messagesContainer.addEventListener("click", async (e) => {
-        const target = e.target;
-        const messageEl = target.closest(".chat-message");
-        if (!messageEl) return;
-        const chatId = messageEl.dataset.chatId;
+    /**
+     * メッセージ操作（編集・削除クリック）ハンドラー
+     */
+    async function handleMessageActions(event) {
+        const clickedElement = event.target;
+        const messageElement = clickedElement.closest(".chat-message");
+        if (!messageElement) return;
+        const chatId = messageElement.dataset.chatId;
 
         // 編集モード切替
-        if (target.closest(".chat-message__edit-button")) {
-            toggleEditMode(messageEl, true);
-        } else if (target.closest(".chat-message__cancel-button")) {
-            toggleEditMode(messageEl, false);
+        if (clickedElement.closest(".chat-message__edit-button")) {
+            toggleEditMode(messageElement, true);
+        } else if (clickedElement.closest(".chat-message__cancel-button")) {
+            toggleEditMode(messageElement, false);
         }
         // 削除実行
-        else if (target.closest(".chat-message__delete-button")) {
+        else if (clickedElement.closest(".chat-message__delete-button")) {
             if (confirm("本当に削除しますか？")) {
                 try {
                     await apiRequest(`/api/v1/chats/${chatId}`, "DELETE");
-                    messageEl.remove();
+                    messageElement.remove();
                 } catch (error) {
                     alert("削除に失敗しました");
                 }
             }
         }
-    });
+    }
 
-    // 編集フォーム送信 (Event Delegation)
-    messagesContainer.addEventListener("submit", async (e) => {
-        if (e.target.classList.contains("chat-message__edit-form")) {
-            e.preventDefault();
-            const form = e.target;
-            const messageEl = form.closest(".chat-message");
-            const chatId = messageEl.dataset.chatId;
-            const newMessage = form.querySelector(
-                'textarea[name="message"]'
-            ).value;
+    /**
+     * 編集フォーム送信ハンドラー
+     */
+    async function handleEditSubmit(event) {
+        if (!event.target.classList.contains("chat-message__edit-form")) return;
 
-            try {
-                const response = await apiRequest(
-                    `/api/v1/chats/${chatId}`,
-                    "PATCH",
-                    JSON.stringify({ message: newMessage }),
-                    {
-                        "Content-Type": "application/json",
-                    }
-                );
-                // UI更新
-                const bubbleText = messageEl.querySelector(
-                    ".chat-message__text"
-                );
-                bubbleText.textContent = response.message; // サーバーからのレスポンスを使用
-                toggleEditMode(messageEl, false);
-            } catch (error) {
-                alert("更新に失敗しました");
-            }
+        event.preventDefault();
+        const form = event.target;
+        const messageElement = form.closest(".chat-message");
+        const chatId = messageElement.dataset.chatId;
+        const newMessage = form.querySelector('textarea[name="message"]').value;
+
+        try {
+            const response = await apiRequest(
+                `/api/v1/chats/${chatId}`,
+                "PATCH",
+                JSON.stringify({ message: newMessage }),
+                { "Content-Type": "application/json" }
+            );
+
+            // UI更新
+            const bubbleText = messageElement.querySelector(
+                ".chat-message__text"
+            );
+            bubbleText.textContent = response.message;
+            toggleEditMode(messageElement, false);
+        } catch (error) {
+            alert("更新に失敗しました");
         }
-    });
+    }
 
-    // APIリクエストヘルパー
+    /**
+     * APIリクエストヘルパー
+     */
     async function apiRequest(url, method, body = null, headers = {}) {
         const csrfToken = document.querySelector(
             'meta[name="csrf-token"]'
@@ -156,27 +166,29 @@ document.addEventListener("DOMContentLoaded", function () {
         };
         if (body) config.body = body;
 
-        const res = await fetch(url, config);
-        if (!res.ok) {
-            const data = await res.json();
-            const error = new Error(data.message || "Error");
-            error.data = data; // レスポンスデータをErrorオブジェクトに添付
+        const response = await fetch(url, config);
+        if (!response.ok) {
+            const errorResponse = await response.json();
+            const error = new Error(errorResponse.message || "Error");
+            error.data = errorResponse;
             throw error;
         }
-        return res.json();
+        return response.json();
     }
 
-    // メッセージ取得
+    /**
+     * メッセージ取得処理
+     */
     async function fetchMessages(pageNum, isScrollToBottom) {
         if (isLoading) return;
         isLoading = true;
 
         try {
-            const res = await apiRequest(
+            const apiResponse = await apiRequest(
                 `/api/v1/items/${itemId}/chats?page=${pageNum}`,
                 "GET"
             );
-            const newMessages = res.data; // paginate response
+            const newMessages = apiResponse.data;
 
             if (newMessages.length === 0) {
                 hasMore = false;
@@ -184,44 +196,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // メッセージは created_at desc (新しい順) で来る
-            // UIには下(新しい) -> 上(古い) で積みたいが、無限スクロールは「過去分を上に足す」
-            // ページ1: [Newest ...... Older]
-            // 表示: [Older ...... Newest]
-            // なので、受け取った配列を reverse して、Prepend する
-
-            // 既存のスクロール高さを保持
             const prevScrollHeight = messagesContainer.scrollHeight;
-
             const fragment = document.createDocumentFragment();
-            // 配列を時系列順 (古い順) に並び替えてから HTML 生成
-            // res.data は [Newest, ..., Newer] なので reverse すると [Newer, ..., Newest] (page1の場合)
-            // page2: [EvenOlder, ..., Oldest] -> reverse -> [Oldest, ..., EvenOlder]
-            // これを Prepend すると [Oldest, EvenOlder][Newer, Newest] となる。OK。
-
-            // 重要: reverse() は破壊的なのでコピーする
             const sortedMessages = [...newMessages].reverse();
 
-            sortedMessages.forEach((msg) => {
-                const el = renderMessageItem(msg);
-                fragment.appendChild(el);
+            sortedMessages.forEach((chatMessage) => {
+                const messageElement = renderMessageItem(chatMessage);
+                fragment.appendChild(messageElement);
             });
 
-            // 先頭に追加 (Prepend)
             messagesContainer.insertBefore(
                 fragment,
                 messagesContainer.firstChild
             );
 
-            // ページ更新
-            page = res.current_page;
-            hasMore = res.next_page_url !== null;
+            page = apiResponse.current_page;
+            hasMore = apiResponse.next_page_url !== null;
 
-            // スクロール位置の調整
             if (isScrollToBottom) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             } else {
-                // 前回の高さとの差分だけスクロールさせることで位置を維持
                 messagesContainer.scrollTop =
                     messagesContainer.scrollHeight - prevScrollHeight;
             }
@@ -232,6 +226,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    /**
+     * HTML生成
+     */
     function renderMessageItem(chat) {
         const isSelf = chat.sender_id === currentUserId;
         const div = document.createElement("div");
@@ -240,38 +237,31 @@ document.addEventListener("DOMContentLoaded", function () {
         }`;
         div.dataset.chatId = chat.id;
 
-        // Header (Render for both Self and Other)
+        // ヘッダー生成
         let headerHtml = "";
-        if (chat.sender && chat.sender.profile) {
-            const imgUrl = chat.sender.profile.img_url
+        const imgUrl =
+            chat.sender && chat.sender.profile && chat.sender.profile.img_url
                 ? `/storage/profile_images/${chat.sender.profile.img_url}`
                 : "/images/placeholder.png";
-            headerHtml = `
-                <div class="chat-message__header">
-                     <div class="chat-message__sender-image">
-                        <img src="${imgUrl}" alt="${chat.sender.name}">
-                     </div>
-                     <span class="chat-message__sender-name">${chat.sender.name}</span>
-                </div>
-            `;
-        } else {
-            headerHtml = `
-                <div class="chat-message__header">
-                     <div class="chat-message__sender-image">
-                        <img src="/images/placeholder.png" alt="User">
-                     </div>
-                     <span class="chat-message__sender-name">User</span>
-                </div>
-            `;
-        }
 
-        // Image
+        const senderName = chat.sender ? chat.sender.name : "User";
+
+        headerHtml = `
+            <div class="chat-message__header">
+                    <div class="chat-message__sender-image">
+                    <img src="${imgUrl}" alt="${senderName}">
+                    </div>
+                    <span class="chat-message__sender-name">${senderName}</span>
+            </div>
+        `;
+
+        // 画像生成
         let imageHtml = "";
         if (chat.image_path) {
             imageHtml = `<img src="/storage/${chat.image_path}" class="chat-message__image">`;
         }
 
-        // Actions (Self Only)
+        // アクションボタン生成 (自分のみ)
         let actionsHtml = "";
         let editFormHtml = "";
 
@@ -293,21 +283,22 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         }
 
+        // 日時フォーマット
+        const timeString = new Date(chat.created_at).toLocaleString([], {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+
         div.innerHTML = `
             <div class="chat-message__content">
                 ${headerHtml}
                 <div class="chat-message__bubble">
                     <p class="chat-message__text">${chat.message}</p>
                     ${imageHtml}
-                    <div class="chat-message__time">${new Date(
-                        chat.created_at
-                    ).toLocaleString([], {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}</div>
+                    <div class="chat-message__time">${timeString}</div>
                 </div>
                 ${actionsHtml}
                 ${editFormHtml}
@@ -317,11 +308,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return div;
     }
 
-    function toggleEditMode(messageEl, isEdit) {
-        const bubble = messageEl.querySelector(".chat-message__bubble");
-        const actions = messageEl.querySelector(".chat-message__actions");
-        const editForm = messageEl.querySelector(".chat-message__edit-form");
-        const time = messageEl.querySelector(".chat-message__time");
+    /**
+     * 編集モード切替
+     */
+    function toggleEditMode(messageElement, isEdit) {
+        const bubble = messageElement.querySelector(".chat-message__bubble");
+        const actions = messageElement.querySelector(".chat-message__actions");
+        const editForm = messageElement.querySelector(
+            ".chat-message__edit-form"
+        );
+        const time = messageElement.querySelector(".chat-message__time");
 
         if (isEdit) {
             bubble.style.display = "none";
@@ -330,32 +326,63 @@ document.addEventListener("DOMContentLoaded", function () {
             editForm.style.display = "block";
         } else {
             bubble.style.display = "block";
-            if (actions) actions.style.display = "flex"; // flex or block? CSS check
+            if (actions) actions.style.display = "flex";
             if (time) time.style.display = "block";
             editForm.style.display = "none";
         }
     }
 
-    function showError(msg) {
-        chatErrors.innerHTML = `<p class="chat-form__error">${msg}</p>`;
+    /**
+     * エラーハンドリング
+     */
+    function handleError(error) {
+        if (error.data && error.data.errors) {
+            const errorMessages = Object.values(error.data.errors)
+                .flat()
+                .map(
+                    (errorMessage) =>
+                        `<p class="chat-form__error">${errorMessage}</p>`
+                )
+                .join("");
+
+            chatErrors.innerHTML = errorMessages;
+            chatErrors.style.display = "block";
+            setTimeout(() => {
+                chatErrors.style.display = "none";
+            }, 3000);
+        } else {
+            showError("処理に失敗しました");
+        }
+        console.error(error);
+    }
+
+    function showError(errorMessage) {
+        chatErrors.innerHTML = `<p class="chat-form__error">${errorMessage}</p>`;
         chatErrors.style.display = "block";
         setTimeout(() => {
             chatErrors.style.display = "none";
         }, 3000);
     }
 
-    // FN009 LocalStorage Draft Logic
-    const chatInput = document.getElementById("chat-message-input");
-    if (chatInput) {
-        const soldItemId = chatContainer.dataset.soldItemId;
-        if (soldItemId && currentUserId) {
-            const key = `chat_message_for_${soldItemId}_by_user_${currentUserId}`;
-            const saved = localStorage.getItem(key);
-            if (saved) chatInput.value = saved;
+    /**
+     * 下書き復元 (Initで呼び出し)
+     */
+    function restoreDraft() {
+        if (!chatInput || !soldItemId || !currentUserId) return;
 
-            chatInput.addEventListener("input", () => {
-                localStorage.setItem(key, chatInput.value);
-            });
-        }
+        const key = getDraftKey(soldItemId, currentUserId);
+        const saved = localStorage.getItem(key);
+        if (saved) chatInput.value = saved;
+
+        chatInput.addEventListener("input", () => {
+            localStorage.setItem(key, chatInput.value);
+        });
+    }
+
+    /**
+     * LocalStorageキー取得ヘルパー
+     */
+    function getDraftKey(soldItemId, userId) {
+        return `chat_message_for_${soldItemId}_by_user_${userId}`;
     }
 });

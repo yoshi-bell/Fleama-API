@@ -30,18 +30,6 @@
                 <img src="{{ asset('images/placeholder.png') }}" alt="プロフィール画像" class="chat-user-header__image">
                 @endif
                 <h1 class="chat-user-header__name">{{ $transaction['otherUser']->name }}さんとの<span class="responsive-break"></span>取引画面</h1>
-                <!-- <div class="chat-user-header__rating">
-                    <span class="chat-user-header__rating-stars">
-                        @for($i = 1; $i <= 5; $i++)
-                            @if($i <=$transaction['otherUser']->average_rating)
-                            ★
-                            @else
-                            ☆
-                            @endif
-                            @endfor
-                    </span>
-                    <span class="chat-user-header__rating-value">{{ $transaction['otherUser']->average_rating }}</span>
-                </div> -->
             </div>
             @if($page['isBuyer'])
             <div class="chat-user-header__right">
