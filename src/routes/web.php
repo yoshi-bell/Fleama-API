@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Api\v1\ChatController as ApiChatController;
 use App\Http\Controllers\RatingController;
 use Illuminate\Support\Facades\Route;
 
@@ -77,9 +78,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Chat API (Internal, Session-based)
     // using /api/v1 prefix to match JS client, but inside web middleware stack
     Route::prefix('api/v1')->group(function () {
-        Route::get('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'index'])->name('api.chat.index');
-        Route::post('items/{item}/chats', [\App\Http\Controllers\Api\v1\ChatController::class, 'store'])->name('api.chat.store');
-        Route::apiResource('chats', \App\Http\Controllers\Api\v1\ChatController::class)->only(['update', 'destroy'])->names([
+        Route::get('items/{item}/chats', [ApiChatController::class, 'index'])->name('api.chat.index');
+        Route::post('items/{item}/chats', [ApiChatController::class, 'store'])->name('api.chat.store');
+        Route::apiResource('chats', ApiChatController::class)->only(['update', 'destroy'])->names([
             'update' => 'api.chat.update',
             'destroy' => 'api.chat.destroy',
         ]);

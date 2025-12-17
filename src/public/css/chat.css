@@ -18,7 +18,6 @@
     overflow-y: auto;
     padding: 0;
     background: #868686;
-
 }
 
 .chat-sidebar__list-title {
@@ -38,7 +37,7 @@
     width: 197px;
     margin: 28px auto;
     padding: 2px 5px;
-    background-color: #EEEFEB;
+    background-color: #eeefeb;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -60,7 +59,7 @@
 
 .chat-user-header {
     padding: 15px 20px;
-    border-bottom: 2px solid #5F5F5F;
+    border-bottom: 2px solid #5f5f5f;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -90,10 +89,10 @@
 .chat-user-header__complete-button {
     width: 172px;
     height: 54px;
-    background-color: #FF8282;
+    background-color: #ff8282;
     border: 1px solid #ffffff;
     border-radius: 30px;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 20px;
     color: #ffffff;
     font-weight: bold;
@@ -104,7 +103,7 @@
 .chat-user-header__complete-button:hover {
     background-color: #ff5555;
     color: #fff;
-    border: 1px solid #FF8282;
+    border: 1px solid #ff8282;
 }
 
 .chat-item-info {
@@ -199,7 +198,7 @@
 
 .chat-message__sender-image img {
     width: 60px;
-    height: 6opx;
+    height: 60px;
     border-radius: 50%;
     object-fit: cover;
 }
@@ -207,13 +206,12 @@
 .chat-message__bubble {
     width: 460px;
     min-height: 60px;
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
     padding: 10px 15px;
     border-radius: 4px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     position: relative;
 }
-
 
 .chat-message__text {
     margin: 0;
@@ -251,16 +249,20 @@
     gap: 25px;
 }
 
+.chat-message__edit-form {
+    display: none;
+}
+
 .chat-message__delete-button,
 .chat-message__edit-button {
     background: none;
     border: none;
-    color: #5F5F5F;
+    color: #5f5f5f;
     font-size: 15px;
     cursor: pointer;
     padding: 0;
     text-decoration: none;
-    text-shadow: 1px 1px 2px rgba(0, 4, 4, 0.25)
+    text-shadow: 1px 1px 2px rgba(0, 4, 4, 0.25);
 }
 
 .chat-message__delete-button:hover,
@@ -292,7 +294,7 @@
     height: 44px;
     min-height: 44px;
     line-height: 24px;
-    border: 1px solid #5F5F5F;
+    border: 1px solid #5f5f5f;
     border-radius: 4px;
     font-size: 20px;
     font-weight: bold;
@@ -334,7 +336,7 @@
 .chat-form__submit-icon {
     width: 80px;
     height: 60px;
-    margin: 0 20px 0  -5px;
+    margin: 0 20px 0 -5px;
     object-fit: contain;
 }
 
@@ -348,7 +350,6 @@
 .chat-footer__errors {
     margin-left: 10px;
 }
-
 
 /* --- Message Edit Form Styles --- */
 .chat-message__edit-form {
@@ -397,7 +398,6 @@
 .chat-message__cancel-button:hover {
     background-color: #e0e0e0;
 }
-
 
 @media (max-width: 1200px) {
     .chat-container {
@@ -495,12 +495,22 @@
     }
 }
 
+/* 編集中のステータス (Editing State) */
+.chat-message[data-status="editing"] .chat-message__bubble,
+.chat-message[data-status="editing"] .chat-message__actions,
+.chat-message[data-status="editing"] .chat-message__time {
+    display: none;
+}
+
+.chat-message[data-status="editing"] .chat-message__edit-form {
+    display: block;
+}
+
 @media (max-width: 900px) {
     .responsive-break {
         display: block;
     }
-    .chat-user-header__name{
+    .chat-user-header__name {
         font-size: 24px;
-
     }
 }

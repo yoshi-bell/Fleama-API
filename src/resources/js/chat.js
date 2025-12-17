@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let page = 1;
     let hasMore = true;
     let isLoading = false;
+    let errorTimeoutId = null;
 
     // ==========================================
     // 2. 初期化処理 (Init)
@@ -291,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
             `;
             editFormHtml = `
-                <form class="chat-message__edit-form" style="display:none;">
+                <form class="chat-message__edit-form">
                     <textarea name="message" class="chat-message__edit-textarea">${chat.message}</textarea>
                     <div class="chat-message__edit-buttons">
                         <button type="submit" class="chat-message__update-button">保存</button>
@@ -323,6 +324,8 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         `;
 
+        div.dataset.status = "viewing";
+
         return div;
     }
 
@@ -330,56 +333,55 @@ document.addEventListener("DOMContentLoaded", function () {
      * 編集モード切替
      */
     function toggleEditMode(messageElement, isEdit) {
-        const bubble = messageElement.querySelector(".chat-message__bubble");
-        const actions = messageElement.querySelector(".chat-message__actions");
-        const editForm = messageElement.querySelector(
-            ".chat-message__edit-form"
-        );
-        const time = messageElement.querySelector(".chat-message__time");
+        messageElement.dataset.status = isEdit ? "editing" : "viewing";
+    }
 
-        if (isEdit) {
-            bubble.style.display = "none";
-            if (actions) actions.style.display = "none";
-            if (time) time.style.display = "none";
-            editForm.style.display = "block";
+    /**
+     * 共通: エラー表示のUI制御 (ここだけがDOMを触る)
+     */
+    function renderErrorHtml(htmlContent) {
+        chatErrors.innerHTML = htmlContent;
+        chatErrors.style.display = "block";
+
+        // もし前のタイマーが動いていたらキャンセルする（これで勝手に消されなくなる）
+        if (errorTimeoutId) {
+            clearTimeout(errorTimeoutId);
+        }
+
+        // 新しくタイマーをセット
+        errorTimeoutId = setTimeout(() => {
+            chatErrors.style.display = "none";
+            errorTimeoutId = null;
+        }, 3000);
+    }
+
+    /**
+     * エラーハンドリング (データ整形担当)
+     */
+    function handleError(error) {
+        console.error(error); // ログは最初に出すのが一般的
+
+        if (error.data && error.data.errors) {
+            // バリデーションエラーの場合: 配列をHTMLに変換
+            const errorHtml = Object.values(error.data.errors)
+                .flat()
+                .map((msg) => `<p class="chat-form__error">${msg}</p>`)
+                .join("");
+
+            renderErrorHtml(errorHtml);
         } else {
-            bubble.style.display = "block";
-            if (actions) actions.style.display = "flex";
-            if (time) time.style.display = "block";
-            editForm.style.display = "none";
+            // その他のエラーの場合
+            showError("処理に失敗しました");
         }
     }
 
     /**
-     * エラーハンドリング
+     * 単一メッセージ表示 (文字列整形担当)
      */
-    function handleError(error) {
-        if (error.data && error.data.errors) {
-            const errorMessages = Object.values(error.data.errors)
-                .flat()
-                .map(
-                    (errorMessage) =>
-                        `<p class="chat-form__error">${errorMessage}</p>`
-                )
-                .join("");
-
-            chatErrors.innerHTML = errorMessages;
-            chatErrors.style.display = "block";
-            setTimeout(() => {
-                chatErrors.style.display = "none";
-            }, 3000);
-        } else {
-            showError("処理に失敗しました");
-        }
-        console.error(error);
-    }
-
     function showError(errorMessage) {
-        chatErrors.innerHTML = `<p class="chat-form__error">${errorMessage}</p>`;
-        chatErrors.style.display = "block";
-        setTimeout(() => {
-            chatErrors.style.display = "none";
-        }, 3000);
+        // 文字列をHTMLタグで包んで共通関数へ
+        const html = `<p class="chat-form__error">${errorMessage}</p>`;
+        renderErrorHtml(html);
     }
 
     /**
